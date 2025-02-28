@@ -225,7 +225,8 @@ def doWork(classFile, term):
     # NOTE: MIGHT HAVE TO ADD THE BOM STRING
 
     csvList = []
-    with open('rooms.csv', 'w', newline='') as csvfile:
+    outputFileName = 'rooms.csv'
+    with open(outputFileName, 'w', newline='') as csvfile:
 
         # need to create a list of lists where each inner list is a row.
         writer = csv.writer(csvfile, dialect='excel') # every char is ',' separated.
@@ -270,10 +271,13 @@ if __name__ == "__main__":
     # need to be accounted for and reported on because the goal is room occupation
     # being understood.
                         
-    usage = "%prog requires src,filename pairs. Example: jjrGold,gold.csv BCR-visa,visa.csv ..."
+    usage = '%prog requires term,csv-filename pairs. Example: 202408,CoursHistory.csv'
     from optparse import OptionParser
     
     parser = OptionParser(usage=usage)
+
+    parser.add_option("-o", "--outputFile", action="store", type="string", dest="file", 
+                     help="Name of the output file, which is csv of room occupation. 'Rooms.csv'")
     
     (options, args) = parser.parse_args()
     
@@ -285,17 +289,10 @@ if __name__ == "__main__":
         #print('ERROR: Must supply a csv file of classroom data.')
         sys.exit(1)
 
-    term = '202408'
-    # file = 'practiceData'
-    # file = 'CourseHistory.csv'             # 1st run of real data on : 8/25/24
-    #file = 'CourseHistory-send-09042024.csv' # 2nd run of real data on : 9/4/24
-    #file = 'CourseHistory-send-09042024-V2.csv'
-    #file = 'problems.csv'
-    # file = 'CourseHistory-send-09042024-utf8.csv' # 2nd run of real data on : 9/4/24
-
-    file = args[0]
+    arg = args[0]
+    term,file = arg.split(',')
             
-    print('Inputs: file=%s, term=%s'% (file,term) )
+    print('Inputs: term=%s csvFile=%s '% (file,term) )
                         
     doWork(file, term)
     
