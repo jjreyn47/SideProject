@@ -13,23 +13,18 @@ import pdb
 import sys
 import csv
 
+def readCSV_WithEncoding(file_path, encoding='utf-8-sig'):
+    with open(file_path, 'r', encoding=encoding, newline='\r\n') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            yield row
+
 def readCVSTable(dataFile, term):
     '''Accumulate rows into a list of dictionaries, only accepting good data.'''
 
-    # NOTE: BOM file comment: The file was a UTF-8 BOM file, meaning
-    # the first character was unicode telling the software how to
-    # interpret the file. See:
-    #
-    # https://stackoverflow.com/questions/8898294/convert-utf-8-with-bom-to-utf-8-with-no-bom-in-python
-    #
-    # I tried the following to fix the problem, cut-and-pasted from the
-    # article above, but it added an empty line for every row.
-    #
-    # s = open(dataFile, mode='r', encoding='utf-8-sig').read()
-    # open(dataFile, mode='w', encoding='utf-8').write(s)    
-
     accumulator    = []
     keys           = []
+    xlstValues     = []  # use to drop duplicates.  Doesn't matter which row we drop.
     
     nMalformedRows   = 0  # not enough data fields to match keys. Blank line mostly.
     nRoomEmpty       = 0  # Had data but it was all 0's
@@ -42,18 +37,15 @@ def readCVSTable(dataFile, term):
     nRow             = 0  # The total number of rows.
     nBadStart        = 0  # start time is out of range
     nBadEnd          = 0  # end time is out of range
-    
+    nBOMmarkers      = 0
+
     # weed out the data we don't want.
-    
-    with open(dataFile, 'r', newline='\r\n') as file:
 
-        # Fields :  ['TERM', 'CAMPUS', 'XLST', 'CRN', 'DAYS', 'START', 'END', 'ROOM']
-
-        csv_reader = csv.reader(file)
-
-        xlstValues = []  # use to drop duplicates.  Doesn't matter which row we drop.
-
-        for row in csv_reader:
+    try:
+        # We assume this is a utf-8 file with a BOM.  If it is not encoded that way,
+        # an exception will be thrown.
+        
+        for row in readCSV_WithEncoding(dataFile, encoding='utf-8-sig'):
 
             nRow += 1
 
@@ -61,15 +53,6 @@ def readCVSTable(dataFile, term):
 
                 keys = row
 
-                if '\ufeff' in keys[0]:
-                    # This is a BOM file. The first bytes tell how to decode it.
-                    # This is a hack, BTW. But the other approaches I found online
-                    # change the data too much!
-                    
-                    k = keys[0]
-                    k = k[1:]
-                    keys[0] = k
-                
                 print('Keys : ', row)
                 continue
             
@@ -111,6 +94,10 @@ def readCVSTable(dataFile, term):
                     nXLSTEmpty += 1
                 
                 accumulator.append(d)
+
+    except UnicodeDecodeError:
+        raise UnicodeDecodeError("Failed to decode the file with 'utf-8-sig'. Please check the file encoding.")
+        
 
     print('Total rows       : ', nRow)
     print('nMalformedRows   : ', nMalformedRows)
@@ -225,7 +212,7 @@ def doWork(classFile, term):
     # NOTE: MIGHT HAVE TO ADD THE BOM STRING
 
     csvList = []
-    outputFileName = 'rooms.csv'
+    outputFileName = 'rooms-new.csv'
     with open(outputFileName, 'w', newline='') as csvfile:
 
         # need to create a list of lists where each inner list is a row.
