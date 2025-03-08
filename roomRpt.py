@@ -14,6 +14,8 @@ import sys
 import csv
 
 def readCSV_WithEncoding(file_path, encoding='utf-8-sig'):
+    # Use a generator to improve performance in large data sets.
+    
     with open(file_path, 'r', encoding=encoding, newline='\r\n') as f:
         reader = csv.reader(f)
         for row in reader:
